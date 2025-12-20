@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <title>React Real-Time Chat (CDN)</title>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <style>
+    body {
+      background: #0b0b0b;
+      color: #00ff99;
+      font-family: monospace;
+      padding: 30px;
+    }
+    input, button {
+      padding: 8px;
+      background: black;
+      border: 1px solid #00ff99;
+      color: #00ff99;
+    }
+    button {
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .chat {
+      margin-top: 15px;
+      border: 1px dashed #00ff99;
+      padding: 10px;
+      max-width: 400px;
+      height: 200px;
+      overflow-y: auto;
+    }
+    .msg {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+  const { useState, useEffect } = React;
+
+  function App() {
+    const [message, setMessage] = useState("");
+    const [messages, setMessages] = useState(
+      JSON.parse(localStorage.getItem("chat")) || []
+    );
+
+    function sendMessage() {
+      if (!message.trim()) return;
+
+      const newMessages = [...messages, message];
+      setMessages(newMessages);
+      localStorage.setItem("chat", JSON.stringify(newMessages));
+      setMessage("");
+    }
+
+    // REAL-TIME sync između tabova
+    useEffect(() => {
+      window.addEventListener("storage", () => {
+        setMessages(JSON.parse(localStorage.getItem("chat")) || []);
+      });
+    }, []);
+
+    return React.createElement(
+      "div",
+      null,
+
+      React.createElement("h2", null, "💬 React Real-Time Chat"),
+
+      React.createElement("input", {
+        value: message,
+        placeholder: "Upiši poruku...",
+        onChange: e => setMessage(e.target.value),
+        onKeyDown: e => e.key === "Enter" && sendMessage()
+      }),
+
+      React.createElement(
+        "button",
+        { onClick: sendMessage },
+        "Pošalji"
+      ),
+
+      React.createElement(
+        "div",
+        { className: "chat" },
+        messages.map((msg, i) =>
+          React.createElement("div", { key: i, className: "msg" }, "➤ ", msg)
+        )
+      )
+    );
+  }
+
+  ReactDOM
+    .createRoot(document.getElementById("root"))
+    .render(React.createElement(App));
+</script>
+
+</body>
+</html>

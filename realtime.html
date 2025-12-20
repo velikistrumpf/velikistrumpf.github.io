@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8" />
+  <title>React Real-Time CDN Demo</title>
+
+  <!-- React CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <style>
+    body {
+      background: #0f0f0f;
+      color: #00ff88;
+      font-family: monospace;
+      padding: 40px;
+    }
+    input {
+      padding: 10px;
+      width: 300px;
+      background: black;
+      border: 1px solid #00ff88;
+      color: #00ff88;
+    }
+    .box {
+      margin-top: 15px;
+      padding: 10px;
+      border: 1px dashed #00ff88;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script>
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [text, setText] = useState("");
+      const [time, setTime] = useState(new Date().toLocaleTimeString());
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setTime(new Date().toLocaleTimeString());
+        }, 1000);
+
+        return () => clearInterval(timer);
+      }, []);
+
+      return React.createElement(
+        "div",
+        null,
+
+        React.createElement("h2", null, "⚡ React real-time trik"),
+
+        React.createElement("input", {
+          placeholder: "Kucaj nešto...",
+          value: text,
+          onChange: e => setText(e.target.value)
+        }),
+
+        React.createElement(
+          "div",
+          { className: "box" },
+          "Mirror: ", text || "(prazno)"
+        ),
+
+        React.createElement(
+          "div",
+          { className: "box" },
+          "Broj karaktera: ", text.length
+        ),
+
+        React.createElement(
+          "div",
+          { className: "box" },
+          "Trenutno vreme: ", time
+        )
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(React.createElement(App));
+  </script>
+
+</body>
+</html>

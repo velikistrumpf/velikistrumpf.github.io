@@ -1,0 +1,134 @@
+<!-- /nick ime → promena nicka
+
+/clear → brisanje chata
+
+/help → lista komandi -->
+
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <title>React IRC Terminal</title>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <style>
+    body {
+      background: black;
+      color: #00ff00;
+      font-family: monospace;
+      padding: 20px;
+    }
+    .terminal {
+      border: 1px solid #00ff00;
+      padding: 10px;
+      width: 600px;
+      height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .input {
+      margin-top: 10px;
+    }
+    input {
+      width: 600px;
+      background: black;
+      color: #00ff00;
+      border: none;
+      outline: none;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+  const { useState, useEffect, useRef } = React;
+
+  function App() {
+    const [nick, setNick] = useState(
+      localStorage.getItem("nick") || "guest"
+    );
+    const [input, setInput] = useState("");
+    const [log, setLog] = useState(
+      JSON.parse(localStorage.getItem("irc")) || []
+    );
+
+    const terminalRef = useRef(null);
+
+    function push(msg) {
+      const newLog = [...log, msg];
+      setLog(newLog);
+      localStorage.setItem("irc", JSON.stringify(newLog));
+    }
+
+    function handleCommand(text) {
+      const parts = text.split(" ");
+
+      if (parts[0] === "/nick" && parts[1]) {
+        setNick(parts[1]);
+        localStorage.setItem("nick", parts[1]);
+        push(`* Nick promenjen u ${parts[1]}`);
+        return true;
+      }
+
+      if (parts[0] === "/clear") {
+        setLog([]);
+        localStorage.removeItem("irc");
+        return true;
+      }
+
+      if (parts[0] === "/help") {
+        push("Komande:");
+        push("/nick ime");
+        push("/clear");
+        push("/help");
+        return true;
+      }
+
+      return false;
+    }
+
+    function submit() {
+      if (!input.trim()) return;
+
+      if (!handleCommand(input)) {
+        push(`<${nick}> ${input}`);
+      }
+
+      setInput("");
+    }
+
+    // sync između tabova
+    useEffect(() => {
+      window.addEventListener("storage", () => {
+        setLog(JSON.parse(localStorage.getItem("irc")) || []);
+      });
+    }, []);
+
+    // auto-scroll
+    useEffect(() => {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }, [log]);
+
+    return React.createElement(
+      "div",
+      null,
+
+      React.createElement("h3", null, "🖥 IRC Terminal"),
+
+      React.createElement(
+        "div",
+        { className: "terminal", ref: terminalRef },
+        log.map((line, i) =>
+          React.createElement("div", { key: i }, line)
+        )
+      ),
+
+      React.createElement(
+        "div",
+        { className: "input" },
+        React.createElemen

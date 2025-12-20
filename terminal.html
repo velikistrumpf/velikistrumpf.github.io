@@ -7,8 +7,8 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-  <meta charset="UTF-8" />
-  <title>React IRC Terminal – FIXED</title>
+  <meta charset="UTF-8">
+  <title>React IRC Terminal</title>
 
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -28,15 +28,15 @@
       overflow-y: auto;
       white-space: pre-wrap;
     }
-    .prompt {
+    .input {
       margin-top: 10px;
     }
     input {
+      width: 600px;
       background: black;
       color: #00ff00;
       border: none;
       outline: none;
-      width: 540px;
       font-family: monospace;
     }
   </style>
@@ -48,49 +48,44 @@
 <script>
   const { useState, useEffect, useRef } = React;
 
-  const STORAGE_KEY = "irc_log";
-
   function App() {
     const [nick, setNick] = useState(
-      localStorage.getItem("irc_nick") || "guest"
+      localStorage.getItem("nick") || "guest"
     );
     const [input, setInput] = useState("");
-    const [log, setLog] = useState(() => {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    });
+    const [log, setLog] = useState(
+      JSON.parse(localStorage.getItem("irc")) || []
+    );
 
-    const termRef = useRef(null);
+    const terminalRef = useRef(null);
 
-    function saveLog(newLog) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newLog));
+    function push(msg) {
+      const newLog = [...log, msg];
       setLog(newLog);
+      localStorage.setItem("irc", JSON.stringify(newLog));
     }
 
-    function pushLine(line) {
-      saveLog([...log, line]);
-    }
+    function handleCommand(text) {
+      const parts = text.split(" ");
 
-    function handleCommand(cmd) {
-      const [command, arg] = cmd.split(" ");
-
-      if (command === "/nick" && arg) {
-        setNick(arg);
-        localStorage.setItem("irc_nick", arg);
-        pushLine(`* nick promenjen u ${arg}`);
+      if (parts[0] === "/nick" && parts[1]) {
+        setNick(parts[1]);
+        localStorage.setItem("nick", parts[1]);
+        push(`* Nick promenjen u ${parts[1]}`);
         return true;
       }
 
-      if (command === "/clear") {
-        localStorage.removeItem(STORAGE_KEY);
+      if (parts[0] === "/clear") {
         setLog([]);
+        localStorage.removeItem("irc");
         return true;
       }
 
-      if (command === "/help") {
-        pushLine("Komande:");
-        pushLine("/nick ime");
-        pushLine("/clear");
-        pushLine("/help");
+      if (parts[0] === "/help") {
+        push("Komande:");
+        push("/nick ime");
+        push("/clear");
+        push("/help");
         return true;
       }
 
@@ -101,26 +96,22 @@
       if (!input.trim()) return;
 
       if (!handleCommand(input)) {
-        pushLine(`<${nick}> ${input}`);
+        push(`<${nick}> ${input}`);
       }
 
       setInput("");
     }
 
-    /* REAL-TIME SYNC IZMEĐU TABOVA */
+    // sync između tabova
     useEffect(() => {
-      function onStorage(e) {
-        if (e.key === STORAGE_KEY) {
-          setLog(JSON.parse(e.newValue) || []);
-        }
-      }
-      window.addEventListener("storage", onStorage);
-      return () => window.removeEventListener("storage", onStorage);
+      window.addEventListener("storage", () => {
+        setLog(JSON.parse(localStorage.getItem("irc")) || []);
+      });
     }, []);
 
-    /* AUTO SCROLL */
+    // auto-scroll
     useEffect(() => {
-      termRef.current.scrollTop = termRef.current.scrollHeight;
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }, [log]);
 
     return React.createElement(
@@ -131,7 +122,7 @@
 
       React.createElement(
         "div",
-        { className: "terminal", ref: termRef },
+        { className: "terminal", ref: terminalRef },
         log.map((line, i) =>
           React.createElement("div", { key: i }, line)
         )
@@ -139,7 +130,7 @@
 
       React.createElement(
         "div",
-        { className: "prompt" },
+        { className: "input" },
         React.createElement("span", null, nick + "> "),
         React.createElement("input", {
           value: input,
